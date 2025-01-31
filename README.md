@@ -2,28 +2,34 @@
 
 This project is providing shortened URLs service via a CSV file uploads. Build with PHP and Laravel.
 
-## Requirements
+
+## Requirements (tested with)
+
 ```
 PHP 8.4
-Composer
-Docker
+Composer 2.8
+Docker 4.37
 ```
+
 
 ## How to run
 
-First we need to install all of the packeges with composer. To do that run this command from the project root directory.
+First we need to install all of the packages with composer. To do that run this command from the project root directory.
+
 ```
 composer install
 ```
 
 Now we need to create a local configuration file. Lets copy the example provided.
+
 ```
 cp .env.example .env
 ```
 
 Now you can set your db connection params in the .env file
 
-To run the database we will need to run docker with docker-compose.yml configuration file with for postrges image.
+To run the database we will need to run docker service with docker-compose.yml configuration file for PostgreSQL image.
+
 ```
 docker-compose up
 ```
@@ -31,47 +37,53 @@ docker-compose up
 After this the docker container with database will be running in the background. Make sure to check that your db password and username are matching in .env and docker-compose.yml
 
 If you'll need to restart and recreate the docker db container you can use this command.
+
 ```
 docker-compose up --force-recreate --build
 ```
 
 After the database container is ready we can run database migrations.
+
 ```
 php artisan migrate
 ```
 
 Before running the server we need to generate app keys
+
 ```
 php artisan key:generate
-
 php artisan config:cache
 ```
 
-There are multiple ways of starting server locally and I suggest running it with this command. It is picking up the php.ini config provided in the repository that increses the limits for file uploads. It is usefull for testing with large amount of data in the files. (Othervise depending on your local php configuration some files might not upload)
+There are multiple ways of starting server locally and I suggest running it with this command. It is picking up the php.ini config provided in the repository that increases the limits for file uploads. It is useful for testing with large amount of data in the files. (Othervise depending on your local php configuration some files might not upload)
+
 ```
 php -c php.ini -S localhost:8000 -t public
 ```
 
 If you are not testing with large amount of data you can run laravel server with
+
 ```
 //With composer
 composer run dev
-
 //Or with artisan
 php artisan serve
 ```
 
 After the server is up and running we should also start the queue worker. It is going to be processing uploaded files in the background.
+
 ```
 php artisan queue:work
 ```
 
-I have created a few tests which are mostly testing that validation rules and exeptions are handeled properly in the controllers and it's a good time to try running it.
+I have created a few tests which are mostly testing that validation rules and exceptions are handeled properly in the controllers and it's a good time to try running it.
+
 ```
 php artisan test
 ```
 
-Now when everything is up and running you can import the postman collection provided in the repository into your api client and go do some tests!
+Now when everything is up and running you can import the Postman collection provided in the repository into your api client and go do some tests!
+
 ```
 surl.postman_collection.json
 ```
@@ -86,10 +98,10 @@ You can find examples of test .csv files in the '/data' folder, few small ones, 
 
 2. Queue worker picks up the processing job, opens .csv file and parses its content checking if urls are correct. Valid urls are prepared for saving in batches to make sure the we won't be overloading our database with thousands of requests.
 
-3. To create the short urls we are using unique generated ids of our newly inserted data. Ids are transformed with Base58 encoding to enhance readability and avoid confusion between visually similar characters.
-```
-Base 58 Encoding: A variation of Base 64 that excludes characters that are not URL-safe (e.g., +, /) and similar-looking characters like 0 (zero), O (capital o), I (capital i), and l (lowercase L) to enhance readability.
-```
+3. To create the short urls we are using unique generated ids of our newly inserted data. Ids are transformed with Base58 encoding to enhance readability and avoid confusion between visually similar characters. 
+
+    >***Base 58 Encoding: A variation of Base 64 that excludes characters that are not URL-safe (e.g., +, /) and similar-looking characters like 0 (zero), O (capital o), I (capital i), and l (lowercase L) to enhance readability.***
+
 4. After the file is processed we can go and look up newly created links with (GET /api/surl). The fields we are interested at are 'token' and 'redirect_url'. We can copy 'redirect_url' value and paste it to the browser to test the redirect functionality. This can also be done with postman (GET /r/{token}).
 
 5. When user goes through the 'redirect_url' we are collecting his 'useragent' and 'timestamp' with a middleware to save statistics of the visits. I have chosen middleware for this task so this functionality could be easely tweeked, reused or disabled upon need.
