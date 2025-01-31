@@ -92,6 +92,29 @@ surl.postman_collection.json
 
 You can find examples of test .csv files in the '/data' folder, few small ones, one with 40k records and one with 1M. Csv files are expected to have a header row with 'url' column. If it is not present the data won't be mapped properly and parsed. I was thinking that our users would maybe want to extend the amount of information uploaded in the future. For example add category tags associated with urls, etc.
 
+### Bonus
+
+I have included golang script which can be used for generating csv files. You'll need golang installed on your machine (v 1.23).
+
+From the root directory do
+
+```
+cd cgen
+```
+
+To get feature flags avaliable run
+
+```
+go run cgen.go -h
+```
+
+Example usage
+
+```
+go run cgen.go -f=file10k.csv -l=10000 -u="https://duckduckgo.com/?t=h_&q="
+```
+
+
 ## Application architecture
 
 1. When .csv file is uploaded with (POST /api/surl) and saved to local file storage. The processing job is scheduled and it is going to be picked up by the queue worker later on. This is made to make sure that we can process large amounts of data without relying on running the initial request for a very long time.
