@@ -40,7 +40,14 @@ After the database container is ready we can run database migrations.
 php artisan migrate
 ```
 
-There are multiple ways of starting server locally. I suggest running it with this command. It is picking up the php.ini config provided in the repository that increses the limits for file uploads. It is usefull for testing with large amount of data in the files. (Othervise depending on your local php configuration some files might not upload)
+Before running the server we need to generate app keys
+```
+php artisan key:generate
+
+php artisan config:cache
+```
+
+There are multiple ways of starting server locally and I suggest running it with this command. It is picking up the php.ini config provided in the repository that increses the limits for file uploads. It is usefull for testing with large amount of data in the files. (Othervise depending on your local php configuration some files might not upload)
 ```
 php -c php.ini -S localhost:8000 -t public
 ```
