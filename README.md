@@ -4,7 +4,7 @@ This project is providing shortened URLs service via a CSV file uploads. Build w
 
 ## Requirements
 ```
-PHP ^8.2
+PHP 8.4
 Composer
 Docker
 ```
