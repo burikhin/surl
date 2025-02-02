@@ -40,9 +40,8 @@ class ProcessImportJob implements ShouldQueue
 
             // Checking if we have col 'url' and if it is a valid url
             if (! empty($rowMapped['url']) && Str::isUrl($rowMapped['url'])) {
-                $rowMapped['url'] = $rowMapped['url'];
-                $currentCount++;
                 $currentBatch[] = $rowMapped;
+                $currentCount++;
 
                 if ($currentCount >= $this->batchSize) {
                     $this->processUrlBatch($currentBatch);
