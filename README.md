@@ -1,6 +1,6 @@
 # Url shortener
 
-This project is providing shortened URLs service via a CSV file uploads. Build with PHP and Laravel.
+This project provides a shortened URL service via CSV file uploads. Built with PHP and Laravel.
 
 
 ## Requirements (tested with)
