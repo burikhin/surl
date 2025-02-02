@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Utils\Base58;
 
@@ -67,23 +68,30 @@ class ProcessImportJob implements ShouldQueue
      */
     private function processUrlBatch(array $batch): void
     {
-        Surl::upsert($batch, uniqueBy: ['url']);
+        // Using raw sql to get inserted data back, upsert only returns affected rows
+        $sql = 'INSERT INTO surls (url, created_at, updated_at) VALUES ';
+        foreach ($batch as $row) {
+            $sql .= '('."'".$row['url']."'".', current_timestamp, current_timestamp'.'), ';
+        }
 
-        // Fetching just saved surls to generate new tokens
-        $newSurls = Surl::whereNull('token')->get();
+        // Removing the last coma and space from generated string
+        $sql = Str::substr($sql, 0, -2);
+        $sql .= ' ON CONFLICT DO NOTHING RETURNING id, url';
 
-        if (! empty($newSurls)) {
+        $surls = DB::select($sql);
+
+        if (! empty($surls)) {
             // Generating unique tokens based on the db ids
-            $updatedSurls = [];
-            foreach ($newSurls as $surl) {
-                $updatedSurls[] = [
+            $updates = [];
+            foreach ($surls as $surl) {
+                $updates[] = [
                     'id' => $surl->id,
                     'url' => $surl->url,
                     'token' => Base58::encode($surl->id),
                 ];
             }
 
-            Surl::upsert($updatedSurls, uniqueBy: ['url'], update: ['token']);
+            Surl::upsert($updates, uniqueBy: ['url'], update: ['token']);
         }
     }
 }
