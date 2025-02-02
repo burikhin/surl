@@ -15,6 +15,7 @@ class CreateUrlsFromFileRequest extends FormRequest
     {
         return [
             'urls' => ['required', 'file', 'extensions:csv'],
+            'experimental' => ['required', 'boolean'],
         ];
     }
 }
