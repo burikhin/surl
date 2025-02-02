@@ -5,8 +5,6 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 	"io"
 	"log"
 	"math"
@@ -14,11 +12,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 const (
-	batchSize = 5000
+	batchSize = 5001
 )
 
 var (
@@ -44,9 +46,12 @@ func main() {
 	csvReader := csv.NewReader(f)
 
 	currentCount := 0
-	currentBatch := []map[string]string{}
+	currentBatch := [batchSize]map[string]string{}
 	readHeader := true
 	header := []string{}
+
+	var wg sync.WaitGroup
+	limit := make(chan bool, 20)
 
 	for {
 		row, err := csvReader.Read()
@@ -69,47 +74,49 @@ func main() {
 
 		if u, ok := surl["url"]; ok {
 			if _, err := url.ParseRequestURI(u); err == nil {
-				currentBatch = append(currentBatch, surl)
+				currentBatch[currentCount] = surl
 				currentCount++
 
 				if currentCount >= batchSize {
-					processUrlBatch(currentBatch, db)
+					wg.Add(1)
+					limit <- true
+					go processUrlBatch(currentBatch, currentCount, db, limit, &wg)
 
 					currentCount = 0
-					currentBatch = nil
+					currentBatch = [batchSize]map[string]string{}
 				}
 			}
 		}
 	}
-	if len(currentBatch) > 0 {
-		processUrlBatch(currentBatch, db)
+	if currentCount > 0 {
+		wg.Add(1)
+		limit <- true
+		go processUrlBatch(currentBatch, currentCount, db, limit, &wg)
 	}
+
+	wg.Wait()
 
 	endTime := time.Now()
 	executionTime := endTime.Sub(startTime)
 	fmt.Println("Execution time: ", executionTime)
 }
 
-func processUrlBatch(batch []map[string]string, db *sql.DB) {
+func processUrlBatch(batch [batchSize]map[string]string, count int, db *sql.DB, limit chan bool, wg *sync.WaitGroup) {
 	insertS := "INSERT INTO surls (url, created_at, updated_at) VALUES "
 
-	for _, v := range batch {
-		insertS += "(" + "'" + v["url"] + "'" + ", current_timestamp, current_timestamp" + "), "
+	for i := 0; i < count; i++ {
+		insertS += "(" + "'" + batch[i]["url"] + "'" + ", current_timestamp, current_timestamp" + "), "
 	}
 
 	//Removing the last coma and space from generated string
 	insertS = insertS[:len(insertS)-2]
-	insertS += "ON CONFLICT DO NOTHING"
+	insertS += "ON CONFLICT DO NOTHING RETURNING id, url"
 
-	_, err := db.Exec(insertS)
+	rows, err := db.Query(insertS)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	rows, err := db.Query("SELECT id, url FROM surls WHERE token IS NULL")
-	if err != nil {
-		panic(err.Error())
-	}
 	defer rows.Close()
 
 	updateS := "INSERT INTO surls (id, url, token) VALUES "
@@ -148,6 +155,9 @@ func processUrlBatch(batch []map[string]string, db *sql.DB) {
 			panic(err.Error())
 		}
 	}
+
+	<-limit
+	defer wg.Done()
 }
 
 func base58Encode(value int) string {
@@ -182,7 +192,7 @@ func getDbConnection() *sql.DB {
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		hostEnv, portEnv, usernameEnv, passwordEnv, databaseEnv)
 	db, err := sql.Open("postgres", pgConnectionString)
-	// db.SetMaxOpenConns(20) // Sane default
+	// db.SetMaxOpenConns(20)
 	// db.SetMaxIdleConns(0)
 	// db.SetConnMaxLifetime(time.Nanosecond)
 	if err != nil {
