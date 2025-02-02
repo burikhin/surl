@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	batchSize = 5001
+	batchSize = 400
 )
 
 var (
