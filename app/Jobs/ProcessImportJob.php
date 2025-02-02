@@ -2,15 +2,12 @@
 
 namespace App\Jobs;
 
-use App\Models\Surl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Utils\Base58;
 
 class ProcessImportJob implements ShouldQueue
 {
@@ -45,7 +42,7 @@ class ProcessImportJob implements ShouldQueue
                 $currentCount++;
 
                 if ($currentCount >= $this->batchSize) {
-                    $this->processUrlBatch($currentBatch);
+                    ProcessBatchJob::dispatch($currentBatch);
 
                     $currentCount = 0;
                     $currentBatch = [];
@@ -55,43 +52,11 @@ class ProcessImportJob implements ShouldQueue
 
         // Finishing saving the last batch
         if (! empty($currentBatch)) {
-            $this->processUrlBatch($currentBatch);
+            ProcessBatchJob::dispatch($currentBatch);
         }
 
         fclose($fileStream);
 
         unlink($this->file);
-    }
-
-    /**
-     * Shorten and save urls with new tokens.
-     */
-    private function processUrlBatch(array $batch): void
-    {
-        // Using raw sql to get inserted data back, upsert only returns affected rows
-        $sql = 'INSERT INTO surls (url, created_at, updated_at) VALUES ';
-        foreach ($batch as $row) {
-            $sql .= '('."'".$row['url']."'".', current_timestamp, current_timestamp'.'), ';
-        }
-
-        // Removing the last coma and space from generated string
-        $sql = Str::substr($sql, 0, -2);
-        $sql .= ' ON CONFLICT DO NOTHING RETURNING id, url';
-
-        $surls = DB::select($sql);
-
-        if (! empty($surls)) {
-            // Generating unique tokens based on the db ids
-            $updates = [];
-            foreach ($surls as $surl) {
-                $updates[] = [
-                    'id' => $surl->id,
-                    'url' => $surl->url,
-                    'token' => Base58::encode($surl->id),
-                ];
-            }
-
-            Surl::upsert($updates, uniqueBy: ['url'], update: ['token']);
-        }
     }
 }
