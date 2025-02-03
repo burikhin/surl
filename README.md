@@ -136,3 +136,19 @@ go run cgen.go -f=file10k.csv -l=10000 -u="https://duckduckgo.com/?t=h_&q="
 5. When user goes through the 'redirect_url' we are collecting his 'useragent' and 'timestamp' with a middleware to save statistics of the visits. I have chosen middleware for this task so this functionality could be easely tweeked, reused or disabled upon need.
 
 6. To visit usage analitics we have two endpoints. First on is (GET /api/analytics/{id}) to get information by id and the second one (GET /api/analytics/t/{token}) to get it by token.
+
+
+## Bonus number 2
+
+I have added an experimental branch 'exp' with a program I have written in golang as a alternative to the Laravel workers included in the project, it is multithreaded and gives significan performance gains compared to running multiple queue workers (The best result I have gotten so far on 1M records import is ~ 30s for 5 workers on the php side, and with with golang and goroutines the best result I got was about ~ 10s). The idea is to run the console golang program from the dispatched laravel job, passing in the file to be processed. If you are quirious to try it out switch to the 'exp' branch and compile the go executable.
+
+From the root directory do:
+
+```
+cd gojob
+```
+```
+go build import.go
+```
+
+After that when you are firing (POST /api/surl) request include "experimental = 1" in the form. The request will dispatch the job and run the golang executable to do the import.
