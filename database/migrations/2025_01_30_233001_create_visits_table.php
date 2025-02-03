@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('visits', function (Blueprint $table) {
             $table->id();
+            $table->string('ip');
             $table->string('useragent');
             $table->bigInteger('surl_id');
             $table->foreign('surl_id')->references('id')->on('surls')->onDelete('cascade');

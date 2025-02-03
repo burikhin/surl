@@ -26,6 +26,7 @@ class LogUrlRedirectVisit
 
         $visit = new Visit;
         $visit->surl_id = $surl->id;
+        $visit->ip = $request->ip();
         $visit->useragent = $request->server('HTTP_USER_AGENT');
         $visit->save();
 
