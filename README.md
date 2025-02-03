@@ -52,6 +52,8 @@ Before running the server we need to generate app keys
 
 ```
 php artisan key:generate
+```
+```
 php artisan config:cache
 ```
 
@@ -63,10 +65,12 @@ php -c php.ini -S localhost:8000 -t public
 
 If you are not testing with large amount of data you can run laravel server with
 
+Composer
 ```
-//With composer
 composer run dev
-//Or with artisan
+```
+Or with artisan
+```
 php artisan serve
 ```
 
@@ -140,7 +144,9 @@ go run cgen.go -f=file10k.csv -l=10000 -u="https://duckduckgo.com/?t=h_&q="
 
 ## Bonus number 2
 
-I have added an experimental branch 'exp' with a program I have written in golang as a alternative to the Laravel workers included in the project, it is multithreaded and gives significan performance gains compared to running multiple queue workers (The best result I have gotten so far on 1M records import is ~ 30s for 5 workers on the php side, and with with golang and goroutines the best result I got was about ~ 10s). The idea is to run the console golang program from the dispatched laravel job, passing in the file to be processed. If you are quirious to try it out switch to the 'exp' branch and compile the go executable.
+I have added an experimental branch 'exp' with a program I have written in golang as a alternative to the Laravel workers included in the project. It is multithreaded and gives significan performance gains compared to running multiple queue workers, at least with the tests a have do so far (The best result I have gotten on 1M records import is ~ 30s for 5 workers on the php side, and with with golang and goroutines the best result I got was about ~ 10s). 
+
+The idea is to run the console golang program from the dispatched laravel job, passing in the file to be processed. If you are qurious to try it out switch to the 'exp' branch and compile the go executable.
 
 From the root directory do:
 
