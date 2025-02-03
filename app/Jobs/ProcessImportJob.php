@@ -42,7 +42,7 @@ class ProcessImportJob implements ShouldQueue
                 $currentCount++;
 
                 if ($currentCount >= $this->batchSize) {
-                    ProcessBatchJob::dispatch($currentBatch);
+                    ProcessBatchJob::dispatch($currentBatch)->onQueue('batch');
 
                     $currentCount = 0;
                     $currentBatch = [];
@@ -52,7 +52,7 @@ class ProcessImportJob implements ShouldQueue
 
         // Finishing saving the last batch
         if (! empty($currentBatch)) {
-            ProcessBatchJob::dispatch($currentBatch);
+            ProcessBatchJob::dispatch($currentBatch)->onQueue('batch');
         }
 
         fclose($fileStream);
