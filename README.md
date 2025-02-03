@@ -70,10 +70,16 @@ composer run dev
 php artisan serve
 ```
 
-After the server is up and running we should also start the queue worker. It is going to be processing uploaded files in the background.
+After the server is up and running we should also start the import queue worker. It is going to be processing uploaded files in the background.
 
 ```
 php artisan queue:work
+```
+
+Import queue worker is also dispatching batch processing jobs into a separate queue called 'batch'. To scale the processing of batches you can assign multiple workers for 'batch' queue with the following command.
+
+```
+php artisan queue:work --queue=batch
 ```
 
 I have created a few tests which are mostly testing that validation rules and exceptions are handeled properly in the controllers and it's a good time to try running it.
@@ -117,7 +123,7 @@ go run cgen.go -f=file10k.csv -l=10000 -u="https://duckduckgo.com/?t=h_&q="
 
 ## Application architecture
 
-1. When .csv file is uploaded with (POST /api/surl) and saved to local file storage. The processing job is scheduled and it is going to be picked up by the queue worker later on. This is made to make sure that we can process large amounts of data without relying on running the initial request for a very long time.
+1. When .csv file is uploaded with (POST /api/surl) and saved to local file storage. The processing job is scheduled and it is going to be picked up by the queue worker later on. Import queue worker is dispatching batch processing jobs into a separate 'batch' queue. Processing of batches can be scaled up or down with running multiple workers for 'batch' queue. This is made to make sure that we can process large amounts of data without relying on running the initial request for a very long time.
 
 2. Queue worker picks up the processing job, opens .csv file and parses its content checking if urls are correct. Valid urls are prepared for saving in batches to make sure the we won't be overloading our database with thousands of requests.
 
